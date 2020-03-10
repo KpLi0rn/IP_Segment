@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# _*_ coding: utf-8 _*_
+
+"""
+    原作者：rtcatc
+    版本：python3
+    修改者：KpLi0rn
+"""
 from socket import gethostbyname
 import sqlite3
 import os
@@ -105,14 +113,17 @@ def fix_length(All_res,path):
                 continue
 
 if __name__ == '__main__':
-    Delete_databae()
-    Create_database()
-    path1 = input("请输入文件的路径")
-    path2 = input("请输入输出文件的路径")
-    li = Read_hosts(path1)
-    ip_new=Get_domainsIP(li)
-    Sements = IP_Segment(ip_new)
-    Load_message(Sements)
-    re=Show_database()
-    fix_length(re,path2)
-    Delete_databae()
+    try:
+        Delete_databae()
+        Create_database()
+        path1 = input("请输入文件的路径").strip(' ')
+        path2 = input("请输入输出文件的路径").strip(' ')
+        li = Read_hosts(path1)
+        ip_new=Get_domainsIP(li)
+        Sements = IP_Segment(ip_new)
+        Load_message(Sements)
+        re=Show_database()
+        fix_length(re,path2)
+        Delete_databae()
+    except Exception as e:
+        print(e)
