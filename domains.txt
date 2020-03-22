@@ -1,1 +1,4 @@
-www.baidu.com
+ns5.autohome.com.cn
+labs.autohome.com.cn
+jd.autohome.com.cn
+game.autohome.com.cn
