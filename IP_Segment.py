@@ -153,4 +153,8 @@ if __name__ == '__main__':
         2. 对代码结构进行了改进加快了程序运行对速度,美化了运行界面增加了进度条
         
     """)
+    if os.path.exists('./result'):
+        pass
+    else:
+        os.mkdir('./result')
     run()
