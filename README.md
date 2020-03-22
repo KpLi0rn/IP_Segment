@@ -7,6 +7,7 @@
 `pip install -r requirements.txt`
 
 **复制搜集好的域名信息**
+
 然后直接运行即可
 `python IP_Segment.py`
 就可以得到结果，结果在result文件夹中
