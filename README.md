@@ -5,6 +5,7 @@
 ### 使用说明
 环境依赖安装
 `pip install -r requirements.txt`
+
 **复制搜集好的域名信息**
 然后直接运行即可
 `python IP_Segment.py`
