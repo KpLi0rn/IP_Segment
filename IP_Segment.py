@@ -1,129 +1,156 @@
 #!/usr/bin/env python
-# _*_ coding: utf-8 _*_
+# -*- encoding: utf-8 -*-
 
 """
-    原作者：rtcatc
-    版本：python3
-    修改者：KpLi0rn
+    Ip_Segment v0.11 python3
+    author KpLi0rn 基于原作者rtcatc进行改编
 """
+
 from socket import gethostbyname
+from lib.common import store_domains
+import xlwt
+from tqdm import tqdm
+import time
 import sqlite3
 import os
+import sys
+
+
 # 将域名变成 ip
-domains = []
-ips = []
-IP_finally = []
+class Ip_Segment(object):  # 之前由于类的命名和文件一样 所以就一直不行报错
 
-# 将每一个域名都转换成对应的ip
-def Get_domainsIP(host_list):
-    for i in host_list:
-        try:
-            ip = gethostbyname(i)
-            ips.append(ip)
-        except:
-            pass
-    return ips
+    def __init__(self,*params):
+        self.res = params
+        self.domains = []
+        self.ips = []
+        self.segments = []
 
-# 从文件中读取域名
-def Read_hosts(path):
-    with open(path,'r+') as file:
-        content = file.readlines()
-        for i in content:
-            i = i.strip('\n')     # 删除空行 空格 和换行符号
-            i = i.strip()
-            if len(i) != 0:
-                #print(i)
-                domains.append(i)
-        return domains
+    # 从文件中进行域名的读取
+    def Get_Domains(self):
+        path = os.getcwd() + os.sep + "domains.txt"
+        # path = './domains.txt' # 文件根目录下的文件
+        store_domains(path)  # 进行剪贴板文件的复制
+        # path = os.path.abspath('.') + '/domains.txt'
+        with open(path, 'r+') as file:
+            content = file.readlines()
+            if len(content) == 0:
+                sys.stdout.write('[!]请复制域名信息\n')
+                sys.exit(0)
+            for value in content:
+                value = value.strip('\n')  # 删除空行 空格 和换行符号
+                value = value.strip()
+                if len(value) != 0:
+                    self.domains.append(value)
+            # return self.domains
 
-# 将每一个ip转换成ip网段
-def IP_Segment(ips):
-    for ip in ips:
-        ip = ip.split('.')[0] +'.'+ ip.split('.')[1] +'.'+ ip.split('.')[2]+'.' + "0/24"
-        IP_finally.append(ip)
-    #print(IP_finally)
-    return IP_finally
-
-# 创建数据库 数据表
-def Create_database():
-    conn =sqlite3.connect('Segment.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE DATA
-    (Segment TEXT primary key NOT NULL,
-     Weight INT               NOT NULL ); ''')
-    conn.commit()
-    conn.close()
-
-# 向数据表中添加网段 并且设置权重
-def Load_database(IP_finally):
-    conn = sqlite3.connect('Segment.db')
-    c = conn.cursor()
-    SELECT_SQL = "SELECT Weight FROM DATA WHERE Segment = \"" + IP_finally + "\" "      # 查询数据需要用到的sql语句
-    ADD_SQL = "INSERT INTO DATA(Segment,Weight) VALUES (\"" + IP_finally + "\",1)"   # 添加新的ip网段需要用到的sql语句
-    UPDATE_SQL = "UPDATE DATA SET Weight=Weight+1 WHERE Segment = \"" + IP_finally + "\" "   # 增加权重所需要用到的sql语句
-    c.execute(SELECT_SQL)
-    IP_res = c.fetchall()   # 返回一个二维的数据表
-    if len(IP_res) > 0:    # 存在ip网段
-        c.execute(UPDATE_SQL)
-    else:
-        c.execute(ADD_SQL)
-    conn.commit()
-    conn.close()
-
-# 将sqlite3 里面的数据显示出来
-def Show_database():
-    conn = sqlite3.connect('Segment.db')
-    c= conn.cursor()
-    SELECT_SQL = "SELECT * FROM DATA "
-    INFO_res=c.execute(SELECT_SQL)
-    ALL_res = INFO_res.fetchall()
-    #print(ALL_res)
-    return ALL_res
-
-# 将最终的网段信息进行导入
-def Load_message(IP_finally):
-    for ip in IP_finally:
-        Load_database(ip)
-
-# 删除数据库
-def Delete_databae():
-    DB_path = os.getcwd() + os.sep + "Segment.db"
-    try:
-        os.remove(DB_path)
-    except:
-        return 0
-
-# 固定字符串的长度
-def fix_length(All_res,path):
-    max=5
-    for value in All_res:
-        first = value[0]
-        length = len(first)
-        if length>=max:
-            max=length+1
-    for value in All_res:
-        i = value[0]
-        while len(i) < max:
-            i = i + ' '
-            if len(i) == max:
-                print(i+'   '+str(value[1]))
-                with open(path,'a+') as file:
-                    file.write(i+'   '+str(value[1]))
-                    file.write('\n')
+    # 获取域名字典中对应的ip
+    def Get_Ips(self):
+        for value in self.domains:
+            try:
+                ip = gethostbyname(value)
+                self.ips.append(ip)
+            except Exception as e:
+                # sys.stdout.write('[!]请复制域名信息\n')
                 continue
 
+    def Get_Segments(self):
+        for ip in self.ips:
+            ip = ip.split('.')[0] +'.'+ ip.split('.')[1] +'.'+ ip.split('.')[2]+'.' + "0/24"
+            self.segments.append(ip)
+
+    # 数据库的创建
+    def Create_Db(self):
+        conn = sqlite3.connect('Segment.db')
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE DATA
+            (Segment TEXT primary key NOT NULL,
+             Weight  INT              NOT NULL );
+        ''')
+        conn.commit()
+        conn.close()
+
+    def Load_Data(self):
+        for host in self.segments:
+            conn = sqlite3.connect('Segment.db')
+            cursor = conn.cursor()
+            INSERT_SQL = "INSERT INTO DATA(Segment,Weight) VALUES (\"" + host + "\",1)"  # values 后面跟了一个等号所以报错了
+            UPDATE_SQL = "UPDATE DATA SET Weight=Weight+1 WHERE Segment = \"" + host + "\""
+            SELECT_SQL = "SELECT Weight FROM DATA WHERE Segment = \"" + host + "\" "
+            cursor.execute(SELECT_SQL)
+            res = cursor.fetchall()
+            if len(res) > 0:
+                cursor.execute(UPDATE_SQL)  # 如果已经存在改ip就把权重加1
+            else:
+                cursor.execute(INSERT_SQL)  # 如果不存在这个ip那么就把host添加进去
+            conn.commit()
+            conn.close()
+
+    def Show_Data(self):
+        conn = sqlite3.connect('Segment.db')
+        cursor = conn.cursor()
+        SELECT_SQL = "SELECT * FROM DATA"
+        info = cursor.execute(SELECT_SQL)
+        res = info.fetchall()
+        self.res = res
+
+    # 对数据库进行清除
+    def Clean(self):
+        path = os.getcwd() + os.sep + "Segment.db"
+        try:
+            os.remove(path)
+        except:
+            return 0
+
+    # 进度条动画
+    def Stat(self):
+        status = tqdm(self.domains,ascii=True)
+        for _ in status:
+            time.sleep(0.01)
+            status.set_description("Processing" )
+        sys.stdout.write('\n')
+
+    def Show(self):
+        for value in self.res:
+            print(value[0].ljust(20),value[1])
+        sys.stdout.write('\n')
+
+    def Write_Excel(self):
+        try:
+            filename = xlwt.Workbook()
+            sheet = filename.add_sheet('Segment')
+            i=0
+            for value in self.res:
+                sheet.write(i,0,value[0])
+                sheet.write(i,1,value[1])
+                i+=1
+            filename.save('./result/{}.xls'.format(str(time.time()).split('.')[0]))
+            sys.stdout.write('搜集结果在result文件夹中\n')
+        except Exception as e:
+            print(e)
+
+    def start(self):
+        self.Clean()
+        self.Get_Domains()
+        self.Get_Ips()
+        self.Get_Segments()
+        self.Stat()
+        self.Create_Db()
+        self.Load_Data()
+        self.Show_Data()
+        self.Show()
+        self.Clean()
+        self.Write_Excel()
+
+def run():
+    ip_segment = Ip_Segment()
+    ip_segment.start()
+
 if __name__ == '__main__':
-    try:
-        Delete_databae()
-        Create_database()
-        path1 = input("请输入文件的路径").strip(' ')
-        path2 = input("请输入输出文件的路径").strip(' ')
-        li = Read_hosts(path1)
-        ip_new=Get_domainsIP(li)
-        Sements = IP_Segment(ip_new)
-        Load_message(Sements)
-        re=Show_database()
-        fix_length(re,path2)
-        Delete_databae()
-    except Exception as e:
-        print(e)
+    print("""
+        企业IP段信息搜集工具V1.1
+                            -----原作者: Poc Sir  改版: KpLi0rn
+        1. 增加了对域名重复对判断
+        2. 对代码结构进行了改进加快了程序运行对速度,美化了运行界面增加了进度条
+        
+    """)
+    run()
