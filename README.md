@@ -1,5 +1,5 @@
 # IP_Segment
-
+python3编写
 企业IP网段信息搜集工具V1.1
 
 ### 使用说明
