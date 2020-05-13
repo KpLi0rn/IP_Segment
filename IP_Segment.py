@@ -5,7 +5,7 @@
     Ip_Segment v0.11 python3
     author KpLi0rn 基于原作者rtcatc进行改编
 """
-
+from gevent.pool import Pool
 from socket import gethostbyname
 from lib.common import store_domains
 import xlwt
@@ -28,9 +28,7 @@ class Ip_Segment(object):  # 之前由于类的命名和文件一样 所以就�
     # 从文件中进行域名的读取
     def Get_Domains(self):
         path = os.getcwd() + os.sep + "domains.txt"
-        # path = './domains.txt' # 文件根目录下的文件
         store_domains(path)  # 进行剪贴板文件的复制
-        # path = os.path.abspath('.') + '/domains.txt'
         with open(path, 'r+') as file:
             content = file.readlines()
             if len(content) == 0:
@@ -41,7 +39,6 @@ class Ip_Segment(object):  # 之前由于类的命名和文件一样 所以就�
                 value = value.strip()
                 if len(value) != 0:
                     self.domains.append(value)
-            # return self.domains
 
     # 获取域名字典中对应的ip
     def Get_Ips(self):
@@ -50,7 +47,6 @@ class Ip_Segment(object):  # 之前由于类的命名和文件一样 所以就�
                 ip = gethostbyname(value)
                 self.ips.append(ip)
             except Exception as e:
-                # sys.stdout.write('[!]请复制域名信息\n')
                 continue
 
     def Get_Segments(self):
@@ -123,17 +119,18 @@ class Ip_Segment(object):  # 之前由于类的命名和文件一样 所以就�
                 sheet.write(i,0,value[0])
                 sheet.write(i,1,value[1])
                 i+=1
-            filename.save('./result/{}.xls'.format(str(time.time()).split('.')[0]))
-            sys.stdout.write('搜集结果在result文件夹中\n')
+            name = str(time.time()).split('.')[0]
+            filename.save('./result/{}.xls'.format(name))
+            sys.stdout.write('搜集结果为result/{}.xls\n'.format(name))
         except Exception as e:
             print(e)
 
     def start(self):
         self.Clean()
         self.Get_Domains()
+        self.Stat()
         self.Get_Ips()
         self.Get_Segments()
-        self.Stat()
         self.Create_Db()
         self.Load_Data()
         self.Show_Data()
